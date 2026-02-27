@@ -61,19 +61,19 @@ If no signals are found, the cycle exits early.
 ## Knowledge Graph
 
 ```
-                         ┌──────────┐
-               AFFECTS──>│ Service  │
-               │         └──────────┘
+                                 ┌──────────┐
+               AFFECTS──────────>│ Service  │
+               │                 └──────────┘
  ┌──────────┐──┤
- │ Incident │  │HAS_ERROR──>┌──────────┐
- └──────────┘  │            │  Error   │
-               │            └──────────┘
-               │CAUSED_BY──>┌───────────┐
-               │            │ RootCause │
-               │            └───────────┘
-               │REMEDIATED_BY──>┌─────────────┐
-               │                │ Remediation │
-               │                └─────────────┘
+ │ Incident │  │HAS_ERROR───────>┌──────────┐
+ └──────────┘  │                 │  Error   │
+               │                 └──────────┘
+               │CAUSED_BY───────>┌───────────┐
+               │                 │ RootCause │
+               │                 └───────────┘
+               │REMEDIATED_BY───>┌─────────────┐
+               │                 │ Remediation │
+               │                 └─────────────┘
                │HAS_POSTMORTEM──>┌────────────┐
                └                 │ PostMortem │
                                  └────────────┘
