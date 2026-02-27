@@ -52,11 +52,11 @@ If no signals are found, the cycle exits early.
 
 | Tool | What it does here |
 |------|-------------------|
-| **Tavily** | Web search for real-time outage reports and status page updates |
-| **Yutori** | Continuous scouting of status pages, Reddit, HN for incident keywords |
-| **Neo4j** | Knowledge graph — incidents, services, errors, root causes, remediations all linked |
-| **Render** | Hosts the agent + target for self-healing (restart, scale via API) |
-| **Senso.ai** | Stores post-mortems as searchable agent memory |
+| **Tavily** | Search API that scans the web for live outage reports, status page changes, and incident-related news |
+| **Yutori** | Deploys persistent monitoring agents ("scouts") that watch Reddit, Hacker News, and service status pages around the clock for early warning signals |
+| **Neo4j** | Graph database that links every incident to its affected services, errors, root causes, and past fixes — so the agent can look up what worked before |
+| **Render** | Cloud platform that both hosts Ghost Operator and is the remediation target — the agent restarts, scales, or resumes services through its API |
+| **Senso.ai** | Stores every post-mortem as searchable memory, so the agent can recall past incidents and their resolutions when handling new ones |
 
 ## Knowledge Graph
 
