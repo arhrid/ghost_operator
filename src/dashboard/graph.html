@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
+  <script src="https://unpkg.com/force-graph@1.46.0/dist/force-graph.min.js"></script>
   <script src="https://unpkg.com/three-spritetext@1.9.5/dist/three-spritetext.min.js"></script>
   <style>
     :root {
@@ -66,6 +67,12 @@
       color: var(--accent);
     }
 
+    .top-bar-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
     .top-bar .counts {
       font-size: 11px;
       color: var(--text-dim);
@@ -74,6 +81,34 @@
     .top-bar .counts span {
       color: var(--text);
       font-weight: 600;
+    }
+
+    /* ── View toggle ────────────────────────────────────── */
+    .view-toggle {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .view-toggle button {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 12px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .view-toggle button:hover { color: var(--text); }
+
+    .view-toggle button.active {
+      background: var(--accent);
+      color: var(--bg);
     }
 
     /* ── Graph canvas ───────────────────────────────────── */
@@ -281,7 +316,13 @@
   <div class="top-bar">
     <a href="/dashboard/">← Back to Dashboard</a>
     <h1>Knowledge Graph</h1>
-    <div class="counts"><span id="nodeCount">0</span> nodes &middot; <span id="edgeCount">0</span> edges</div>
+    <div class="top-bar-right">
+      <div class="view-toggle">
+        <button id="btn3d" class="active" onclick="switchView('3d')">3D</button>
+        <button id="btn2d" onclick="switchView('2d')">2D</button>
+      </div>
+      <div class="counts"><span id="nodeCount">0</span> nodes &middot; <span id="edgeCount">0</span> edges</div>
+    </div>
   </div>
 
   <div id="graph-container"></div>
@@ -298,7 +339,7 @@
   </div>
 
   <!-- Controls hint -->
-  <div class="controls-hint">
+  <div class="controls-hint" id="controlsHint">
     <kbd>Left-drag</kbd> Rotate &nbsp;&middot;&nbsp;
     <kbd>Right-drag</kbd> Pan &nbsp;&middot;&nbsp;
     <kbd>Scroll</kbd> Zoom &nbsp;&middot;&nbsp;
@@ -326,7 +367,10 @@
     };
     const DEFAULT_COLOR = '#555566';
 
-    let graph;
+    let graph = null;
+    let currentMode = '3d';
+    let graphNodes = [];
+    let graphLinks = [];
 
     function colorFor(label) {
       return NODE_COLORS[label] || DEFAULT_COLOR;
@@ -338,67 +382,66 @@
       return d.innerHTML;
     }
 
-    // ── Fetch graph and render ─────────────────────────────
-    async function init() {
-      let nodes = [];
-      let edges = [];
+    function nodeSize(label) {
+      return label === 'Incident' ? 6 : label === 'Service' ? 4 : 2.5;
+    }
 
+    // ── Fetch data ──────────────────────────────────────────
+    async function fetchData() {
       try {
         const r = await fetch(`${BASE}/api/graph`);
         const data = await r.json();
-        nodes = data.nodes || [];
-        edges = data.edges || [];
+        const nodes = data.nodes || [];
+        const edges = data.edges || [];
+
+        document.getElementById('nodeCount').textContent = nodes.length;
+        document.getElementById('edgeCount').textContent = edges.length;
+
+        graphNodes = nodes.map(node => {
+          const { id: _neoId, ...props } = node.properties || {};
+          return {
+            id: node.id,
+            label: node.label,
+            displayName: node.properties?.title || node.properties?.name || node.label,
+            color: colorFor(node.label),
+            ...props,
+          };
+        });
+
+        graphLinks = edges.map(edge => ({
+          source: edge.source,
+          target: edge.target,
+          type: edge.type,
+        }));
       } catch {
-        // Network error or server unavailable
+        // Network error
       }
+    }
 
-      document.getElementById('nodeCount').textContent = nodes.length;
-      document.getElementById('edgeCount').textContent = edges.length;
+    // ── Destroy current graph ───────────────────────────────
+    function destroyGraph() {
+      const container = document.getElementById('graph-container');
+      if (graph && graph._destructor) graph._destructor();
+      graph = null;
+      container.innerHTML = '';
+    }
 
+    // ── Build 3D graph ──────────────────────────────────────
+    function build3D() {
       const container = document.getElementById('graph-container');
 
-      if (nodes.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <h2>No graph data yet</h2>
-            <p>The knowledge graph is built automatically as Ghost Operator handles incidents.</p>
-            <div class="empty-hint">Run a scan or simulate an incident from the dashboard to get started.</div>
-          </div>
-        `;
-        document.getElementById('legend').style.display = 'none';
-        return;
-      }
+      // Deep-clone data so force simulation doesn't mutate the source
+      const nodes = graphNodes.map(n => ({ ...n }));
+      const links = graphLinks.map(l => ({ ...l }));
 
-      // Prepare nodes for 3d-force-graph
-      const graphNodes = nodes.map(node => {
-        const { id: _neoId, ...props } = node.properties || {};
-        return {
-          id: node.id,
-          label: node.label,
-          displayName: node.properties?.title || node.properties?.name || node.label,
-          color: colorFor(node.label),
-          ...props,
-        };
-      });
-
-      // Prepare links (3d-force-graph expects "links" with source/target matching node ids)
-      const graphLinks = edges.map(edge => ({
-        source: edge.source,
-        target: edge.target,
-        type: edge.type,
-      }));
-
-      // ── Initialize 3D graph ────────────────────────────────
       graph = ForceGraph3D()(container)
-        .graphData({ nodes: graphNodes, links: graphLinks })
+        .graphData({ nodes, links })
         .backgroundColor('#0c0c12')
         .nodeId('id')
-        // Node appearance
         .nodeColor(d => d.color)
-        .nodeVal(d => d.label === 'Incident' ? 6 : d.label === 'Service' ? 4 : 2.5)
+        .nodeVal(d => nodeSize(d.label))
         .nodeOpacity(0.95)
         .nodeLabel(d => `${d.label}: ${d.displayName}`)
-        // Persistent text labels
         .nodeThreeObjectExtend(true)
         .nodeThreeObject(d => {
           const name = d.displayName || d.label;
@@ -411,11 +454,9 @@
           sprite.backgroundColor = 'rgba(12,12,18,0.7)';
           sprite.padding = 1.2;
           sprite.borderRadius = 2;
-          const nodeSize = d.label === 'Incident' ? 6 : d.label === 'Service' ? 4 : 2.5;
-          sprite.position.y = -(nodeSize + 4);
+          sprite.position.y = -(nodeSize(d.label) + 4);
           return sprite;
         })
-        // Edge appearance
         .linkColor(() => '#5a5a7a')
         .linkWidth(1.2)
         .linkOpacity(0.6)
@@ -425,22 +466,121 @@
         .linkDirectionalParticles(1)
         .linkDirectionalParticleWidth(1.5)
         .linkDirectionalParticleColor(link => {
-          const sourceNode = graphNodes.find(n => n.id === (typeof link.source === 'object' ? link.source.id : link.source));
-          return sourceNode ? sourceNode.color : '#5a5a7a';
+          const src = typeof link.source === 'object' ? link.source : nodes.find(n => n.id === link.source);
+          return src ? src.color : '#5a5a7a';
         })
         .linkLabel(d => d.type)
-        // Interactions
         .onNodeClick(node => showNodeDetail(node))
         .onLinkClick(link => showEdgeDetail(link))
         .onBackgroundClick(() => closePanel())
-        // Performance
         .warmupTicks(80)
         .cooldownTicks(200);
 
-      // Fit camera after layout settles
-      setTimeout(() => {
-        graph.zoomToFit(600, 60);
-      }, 2000);
+      setTimeout(() => { if (graph) graph.zoomToFit(600, 60); }, 2000);
+
+      // Update controls hint
+      document.getElementById('controlsHint').innerHTML =
+        '<kbd>Left-drag</kbd> Rotate &nbsp;&middot;&nbsp;<kbd>Right-drag</kbd> Pan &nbsp;&middot;&nbsp;<kbd>Scroll</kbd> Zoom &nbsp;&middot;&nbsp;<kbd>Click</kbd> Inspect';
+    }
+
+    // ── Build 2D graph ──────────────────────────────────────
+    function build2D() {
+      const container = document.getElementById('graph-container');
+
+      const nodes = graphNodes.map(n => ({ ...n }));
+      const links = graphLinks.map(l => ({ ...l }));
+
+      graph = ForceGraph()(container)
+        .graphData({ nodes, links })
+        .backgroundColor('#0c0c12')
+        .nodeId('id')
+        .nodeColor(d => d.color)
+        .nodeVal(d => nodeSize(d.label))
+        .nodeLabel(d => `${d.label}: ${d.displayName}`)
+        .nodeCanvasObjectMode(() => 'after')
+        .nodeCanvasObject((node, ctx, globalScale) => {
+          const name = node.displayName || node.label;
+          const text = name.length > 28 ? name.substring(0, 26) + '...' : name;
+          const fontSize = 12 / globalScale;
+          ctx.font = `600 ${fontSize}px Inter, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'top';
+          const r = nodeSize(node.label) * 1.5;
+
+          // Background
+          const metrics = ctx.measureText(text);
+          const pad = 2 / globalScale;
+          ctx.fillStyle = 'rgba(12,12,18,0.7)';
+          ctx.fillRect(
+            node.x - metrics.width / 2 - pad,
+            node.y + r + pad,
+            metrics.width + pad * 2,
+            fontSize + pad * 2
+          );
+
+          // Text
+          ctx.fillStyle = node.color;
+          ctx.fillText(text, node.x, node.y + r + pad * 2);
+        })
+        .linkColor(() => '#5a5a7a')
+        .linkWidth(1.5)
+        .linkDirectionalArrowLength(6)
+        .linkDirectionalArrowRelPos(1)
+        .linkDirectionalArrowColor(() => '#7a7a9a')
+        .linkDirectionalParticles(1)
+        .linkDirectionalParticleWidth(2)
+        .linkDirectionalParticleColor(link => {
+          const src = typeof link.source === 'object' ? link.source : nodes.find(n => n.id === link.source);
+          return src ? src.color : '#5a5a7a';
+        })
+        .linkLabel(d => d.type)
+        .onNodeClick(node => showNodeDetail(node))
+        .onLinkClick(link => showEdgeDetail(link))
+        .onBackgroundClick(() => closePanel())
+        .warmupTicks(80)
+        .cooldownTicks(200);
+
+      setTimeout(() => { if (graph) graph.zoomToFit(600, 40); }, 1500);
+
+      // Update controls hint
+      document.getElementById('controlsHint').innerHTML =
+        '<kbd>Drag</kbd> Pan &nbsp;&middot;&nbsp;<kbd>Scroll</kbd> Zoom &nbsp;&middot;&nbsp;<kbd>Click</kbd> Inspect';
+    }
+
+    // ── Switch view ─────────────────────────────────────────
+    function switchView(mode) {
+      if (mode === currentMode) return;
+      currentMode = mode;
+
+      document.getElementById('btn3d').classList.toggle('active', mode === '3d');
+      document.getElementById('btn2d').classList.toggle('active', mode === '2d');
+
+      closePanel();
+      destroyGraph();
+
+      if (mode === '3d') build3D();
+      else build2D();
+    }
+
+    // ── Init ────────────────────────────────────────────────
+    async function init() {
+      await fetchData();
+
+      const container = document.getElementById('graph-container');
+
+      if (graphNodes.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <h2>No graph data yet</h2>
+            <p>The knowledge graph is built automatically as Ghost Operator handles incidents.</p>
+            <div class="empty-hint">Run a scan or simulate an incident from the dashboard to get started.</div>
+          </div>
+        `;
+        document.getElementById('legend').style.display = 'none';
+        return;
+      }
+
+      build3D();
     }
 
     // ── Detail panel ───────────────────────────────────────
@@ -503,7 +643,6 @@
       }
     });
 
-    // ── Init ───────────────────────────────────────────────
     init();
   </script>
 </body>
