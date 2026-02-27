@@ -9,7 +9,7 @@ export class YutoriClient {
     this.client = axios.create({
       baseURL: config.yutori.baseUrl,
       headers: {
-        Authorization: `Bearer ${config.yutori.apiKey}`,
+        'X-API-KEY': config.yutori.apiKey,
         'Content-Type': 'application/json',
       },
     });

@@ -9,7 +9,23 @@
       "Bash(git checkout:*)",
       "Bash(npm install:*)",
       "Bash(npm run:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(sleep 4:*)",
+      "Bash(curl:*)",
+      "Bash(sleep 5:*)",
+      "Bash(pkill:*)",
+      "Bash(git commit:*)",
+      "Bash(gh pr:*)",
+      "Bash(sleep 3:*)",
+      "Bash(git:*)",
+      "Bash(echo port freed:*)",
+      "Bash(find:*)",
+      "Bash(lsof:*)",
+      "Bash(npx playwright:*)",
+      "WebFetch(domain:yutori.com)",
+      "WebFetch(domain:blog.yutori.com)",
+      "Bash(node:*)"
     ]
   }
 }
