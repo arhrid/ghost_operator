@@ -96,6 +96,25 @@
       gap: 10px;
     }
 
+    .graph-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: var(--accent);
+      color: var(--bg);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .graph-btn:hover { background: var(--accent-hover); }
+    .graph-btn svg { width: 14px; height: 14px; }
+
     .status-badge {
       display: flex;
       align-items: center;
@@ -864,6 +883,13 @@
       </div>
     </div>
     <div class="header-controls">
+      <a href="/dashboard/graph.html" class="graph-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/>
+          <path d="M8.5 8.5l7 7"/><path d="M15.5 8.5l-7 7"/>
+        </svg>
+        Knowledge Graph
+      </a>
       <div class="status-badge">
         <div class="status-dot" id="statusDot"></div>
         <span id="statusText">Connecting...</span>
