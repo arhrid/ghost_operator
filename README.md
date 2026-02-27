@@ -81,9 +81,48 @@ If no signals are found, the cycle exits early.
 
 The remediator queries this graph before acting. Past incidents with similar services/errors surface what worked before.
 
+## Example Incident
+
+Here's what it looks like when Ghost Operator handles a real incident end-to-end:
+
+> **Scenario:** A Render-hosted API service crashed due to memory exhaustion (OOM). Ghost Operator detected the suspended service, identified the root cause, restarted it, scaled to 2 instances for resilience, and wrote a post-mortem — all within 15 seconds, with zero human intervention.
+
+```
+Incident Timeline
+─────────────────
+10:34:22  [DETECT]     Render health check: ghost-operator-api is suspended
+10:34:23  [DETECT]     Tavily: "Render API degraded performance" reported
+10:34:25  [ANALYZE]    Severity: CRITICAL | Services: render | Error: OOM
+10:34:25  [ANALYZE]    Root cause: Memory exhaustion
+10:34:28  [REMEDIATE]  Restarted ghost-operator-api → Success
+10:34:31  [REMEDIATE]  Scaled ghost-operator-api to 2 instances → Success
+10:34:35  [REPORT]     Post-mortem generated and stored in Neo4j + Senso
+10:34:35  [SYSTEM]     Cycle complete — service recovered
+```
+
+The post-mortem from this incident is now stored in the knowledge graph. Next time a similar OOM event occurs, the remediator will find this record and already know that restart + scale worked.
+
 ## Dashboard
 
 Live at `/dashboard`. Shows health stats, incident feed (color-coded by severity), agent activity log, and knowledge graph node counts. Updates in real-time via SSE.
+
+### Full Dashboard
+
+![Ghost Operator Dashboard](docs/screenshots/dashboard-full.png)
+
+The four panels show system health metrics, knowledge graph node counts, a live incident feed color-coded by severity (red = critical, yellow = warning, purple = info), and a real-time agent activity log showing each step of the pipeline.
+
+### Incident Feed
+
+![Incident Feed](docs/screenshots/dashboard-incidents.png)
+
+Each incident shows its severity level, a description of what happened, which services were affected, and how many remediation actions were taken. Critical incidents (like an OOM crash) appear with a red border; warnings (like a latency spike) appear yellow.
+
+### Agent Activity Log
+
+![Agent Activity Log](docs/screenshots/dashboard-activity.png)
+
+A chronological log of every action taken by every agent — detector, analyzer, remediator, reporter, and system. This is where you can trace the full lifecycle of an incident from first detection signal to post-mortem storage.
 
 **Trigger Scan** — Fires the full pipeline immediately instead of waiting for the next 60s cycle. Hits `POST /api/trigger`. Useful for demos and manual investigation.
 
