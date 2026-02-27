@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
+  <script src="https://unpkg.com/three-spritetext@1.9.5/dist/three-spritetext.min.js"></script>
   <style>
     :root {
       --bg: #0c0c12;
@@ -397,6 +398,23 @@
         .nodeVal(d => d.label === 'Incident' ? 6 : d.label === 'Service' ? 4 : 2.5)
         .nodeOpacity(0.95)
         .nodeLabel(d => `${d.label}: ${d.displayName}`)
+        // Persistent text labels
+        .nodeThreeObjectExtend(true)
+        .nodeThreeObject(d => {
+          const name = d.displayName || d.label;
+          const text = name.length > 28 ? name.substring(0, 26) + '...' : name;
+          const sprite = new SpriteText(text);
+          sprite.color = d.color;
+          sprite.textHeight = 3;
+          sprite.fontFace = 'Inter, sans-serif';
+          sprite.fontWeight = '600';
+          sprite.backgroundColor = 'rgba(12,12,18,0.7)';
+          sprite.padding = 1.2;
+          sprite.borderRadius = 2;
+          const nodeSize = d.label === 'Incident' ? 6 : d.label === 'Service' ? 4 : 2.5;
+          sprite.position.y = -(nodeSize + 4);
+          return sprite;
+        })
         // Edge appearance
         .linkColor(() => '#5a5a7a')
         .linkWidth(1.2)
