@@ -342,13 +342,14 @@
       const elements = [];
 
       for (const node of nodes) {
+        const { id: _neoId, ...props } = node.properties || {};
         elements.push({
           data: {
             id: node.id,
             label: node.label,
             displayName: node.properties?.title || node.properties?.name || node.label,
             color: colorFor(node.label),
-            ...node.properties,
+            ...props,
           },
         });
       }
