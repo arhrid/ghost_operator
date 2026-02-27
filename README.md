@@ -289,33 +289,16 @@ Ghost Operator integrates with five external services. You'll need to sign up fo
 cp .env.example .env
 ```
 
-Open `.env` and fill in the values:
+Open `.env` and fill in your credentials. See `.env.example` for the full list of required variables and where to obtain each key.
 
-| Variable | Required | Where to Get It |
-|----------|----------|-----------------|
-| `PORT` | No | Defaults to `3000` |
-| `TAVILY_API_KEY` | Yes | Sign up at [tavily.com](https://tavily.com) and generate an API key from the dashboard |
-| `YUTORI_API_KEY` | Yes | Sign up at [yutori.ai](https://yutori.ai) and create an API key |
-| `NEO4J_URI` | Yes | Create a free instance at [Neo4j Sandbox](https://sandbox.neo4j.com) — use the Bolt URL (e.g. `bolt://xxx.databases.neo4j.io:7687`) |
-| `NEO4J_USER` | Yes | Provided by your Neo4j instance (default: `neo4j`) |
-| `NEO4J_PASSWORD` | Yes | Provided by your Neo4j instance |
-| `NEO4J_DATABASE` | No | Defaults to `neo4j` |
-| `RENDER_API_KEY` | Yes | Go to [Render Dashboard](https://dashboard.render.com) → Account Settings → API Keys |
-| `SENSO_API_KEY` | Yes | Sign up at [senso.ai](https://senso.ai) and generate an API key |
-| `SENSO_ORGANIZATION_ID` | Yes | Found in your Senso.ai organization settings |
+> **Important:** Never commit your `.env` file. It is already included in `.gitignore`.
 
 ### 3. Set Up Neo4j
 
 Ghost Operator uses Neo4j as its knowledge graph. The quickest way to get started:
 
 1. Go to [sandbox.neo4j.com](https://sandbox.neo4j.com) and create a free **Blank Sandbox**
-2. Once provisioned, copy the **Bolt URL**, **Username**, and **Password** into your `.env`:
-   ```env
-   NEO4J_URI=bolt://<your-sandbox-host>:7687
-   NEO4J_USER=neo4j
-   NEO4J_PASSWORD=<your-sandbox-password>
-   NEO4J_DATABASE=neo4j
-   ```
+2. Once provisioned, copy the **Bolt URL**, **Username**, and **Password** into your `.env`
 3. Ghost Operator will automatically create the necessary nodes and relationships on first run — no manual schema setup is needed
 
 > **Note:** Neo4j Sandbox instances expire after a few days. For persistent usage, consider [Neo4j AuraDB Free](https://neo4j.com/cloud/aura-free/) or a self-hosted instance.
