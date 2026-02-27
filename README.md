@@ -104,27 +104,11 @@ The post-mortem from this incident is now stored in the knowledge graph. Next ti
 
 ## Dashboard
 
-Live at `/dashboard`. Shows health stats, incident feed (color-coded by severity), agent activity log, and knowledge graph node counts. Updates in real-time via SSE.
-
-### Full Dashboard
+Live at `/dashboard`. Real-time health stats, incident feed (color-coded by severity), agent activity log, and knowledge graph counts — all updated via SSE.
 
 ![Ghost Operator Dashboard](docs/screenshots/dashboard-full.png)
 
-The four panels show system health metrics, knowledge graph node counts, a live incident feed color-coded by severity (red = critical, yellow = warning, purple = info), and a real-time agent activity log showing each step of the pipeline.
-
-### Incident Feed
-
-![Incident Feed](docs/screenshots/dashboard-incidents.png)
-
-Each incident shows its severity level, a description of what happened, which services were affected, and how many remediation actions were taken. Critical incidents (like an OOM crash) appear with a red border; warnings (like a latency spike) appear yellow.
-
-### Agent Activity Log
-
-![Agent Activity Log](docs/screenshots/dashboard-activity.png)
-
-A chronological log of every action taken by every agent — detector, analyzer, remediator, reporter, and system. This is where you can trace the full lifecycle of an incident from first detection signal to post-mortem storage.
-
-**Trigger Scan** — Fires the full pipeline immediately instead of waiting for the next 60s cycle. Hits `POST /api/trigger`. Useful for demos and manual investigation.
+**Trigger Scan** — Fires the full pipeline immediately instead of waiting for the next 60s cycle. Hits `POST /api/trigger`.
 
 ## API
 
