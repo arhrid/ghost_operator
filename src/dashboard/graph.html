@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
+  <script src="https://unpkg.com/3d-force-graph@1.73.3/dist/3d-force-graph.min.js"></script>
   <style>
     :root {
       --bg: #0c0c12;
@@ -37,16 +37,6 @@
       overflow: hidden;
     }
 
-    body::before {
-      content: '';
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      pointer-events: none;
-      z-index: 9999;
-      opacity: 0.03;
-      background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-    }
-
     /* ── Header ─────────────────────────────────────────── */
     .top-bar {
       display: flex;
@@ -55,6 +45,8 @@
       padding: 12px 24px;
       border-bottom: 1px solid var(--border);
       flex-shrink: 0;
+      z-index: 5;
+      background: var(--bg);
     }
 
     .top-bar a {
@@ -84,10 +76,37 @@
     }
 
     /* ── Graph canvas ───────────────────────────────────── */
-    #cy {
+    #graph-container {
       flex: 1;
       min-height: 0;
-      background: #1a1a2e;
+      position: relative;
+    }
+
+    /* ── Controls hint ──────────────────────────────────── */
+    .controls-hint {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 10px;
+      color: var(--text-dim);
+      z-index: 10;
+      line-height: 1.6;
+      opacity: 0.8;
+      transition: opacity 0.3s;
+    }
+    .controls-hint:hover { opacity: 1; }
+    .controls-hint kbd {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      color: var(--text);
     }
 
     /* ── Legend ──────────────────────────────────────────── */
@@ -264,7 +283,7 @@
     <div class="counts"><span id="nodeCount">0</span> nodes &middot; <span id="edgeCount">0</span> edges</div>
   </div>
 
-  <div id="cy"></div>
+  <div id="graph-container"></div>
 
   <!-- Legend -->
   <div class="legend" id="legend">
@@ -275,6 +294,14 @@
     <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>Root Cause</div>
     <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>Remediation</div>
     <div class="legend-item"><div class="legend-dot" style="background:#60a5fa"></div>Post-Mortem</div>
+  </div>
+
+  <!-- Controls hint -->
+  <div class="controls-hint">
+    <kbd>Left-drag</kbd> Rotate &nbsp;&middot;&nbsp;
+    <kbd>Right-drag</kbd> Pan &nbsp;&middot;&nbsp;
+    <kbd>Scroll</kbd> Zoom &nbsp;&middot;&nbsp;
+    <kbd>Click</kbd> Inspect
   </div>
 
   <!-- Detail Panel -->
@@ -298,7 +325,7 @@
     };
     const DEFAULT_COLOR = '#555566';
 
-    let cy;
+    let graph;
 
     function colorFor(label) {
       return NODE_COLORS[label] || DEFAULT_COLOR;
@@ -327,8 +354,10 @@
       document.getElementById('nodeCount').textContent = nodes.length;
       document.getElementById('edgeCount').textContent = edges.length;
 
+      const container = document.getElementById('graph-container');
+
       if (nodes.length === 0) {
-        document.getElementById('cy').innerHTML = `
+        container.innerHTML = `
           <div class="empty-state">
             <h2>No graph data yet</h2>
             <p>The knowledge graph is built automatically as Ghost Operator handles incidents.</p>
@@ -339,125 +368,61 @@
         return;
       }
 
-      const elements = [];
-
-      for (const node of nodes) {
+      // Prepare nodes for 3d-force-graph
+      const graphNodes = nodes.map(node => {
         const { id: _neoId, ...props } = node.properties || {};
-        elements.push({
-          data: {
-            id: node.id,
-            label: node.label,
-            displayName: node.properties?.title || node.properties?.name || node.label,
-            color: colorFor(node.label),
-            ...props,
-          },
-        });
-      }
-
-      for (const edge of edges) {
-        elements.push({
-          data: {
-            id: `${edge.source}-${edge.type}-${edge.target}`,
-            source: edge.source,
-            target: edge.target,
-            type: edge.type,
-          },
-        });
-      }
-
-      cy = cytoscape({
-        container: document.getElementById('cy'),
-        elements,
-        style: [
-          {
-            selector: 'node',
-            style: {
-              'background-color': 'data(color)',
-              'label': 'data(displayName)',
-              'font-size': '11px',
-              'font-family': "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-              'color': '#e0e0e8',
-              'text-outline-color': '#1a1a2e',
-              'text-outline-width': 2,
-              'text-valign': 'bottom',
-              'text-margin-y': 6,
-              'width': 34,
-              'height': 34,
-              'border-width': 2,
-              'border-color': 'data(color)',
-              'border-opacity': 0.3,
-            },
-          },
-          {
-            selector: 'node:active',
-            style: {
-              'overlay-opacity': 0,
-            },
-          },
-          {
-            selector: 'node:selected',
-            style: {
-              'border-width': 3,
-              'border-color': '#ffffff',
-              'border-opacity': 1,
-            },
-          },
-          {
-            selector: 'edge',
-            style: {
-              'width': 2,
-              'line-color': '#5a5a7a',
-              'target-arrow-color': '#5a5a7a',
-              'target-arrow-shape': 'triangle',
-              'arrow-scale': 0.8,
-              'curve-style': 'bezier',
-              'label': 'data(type)',
-              'font-size': '9px',
-              'font-family': "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-              'color': '#8888a0',
-              'text-rotation': 'autorotate',
-              'text-outline-color': '#1a1a2e',
-              'text-outline-width': 1.5,
-            },
-          },
-          {
-            selector: 'edge:selected',
-            style: {
-              'line-color': '#2dd4bf',
-              'target-arrow-color': '#2dd4bf',
-              'color': '#2dd4bf',
-            },
-          },
-        ],
-        layout: {
-          name: 'cose',
-          animate: true,
-          animationDuration: 800,
-          nodeRepulsion: 8000,
-          idealEdgeLength: 120,
-          gravity: 0.3,
-          padding: 40,
-        },
-        minZoom: 0.2,
-        maxZoom: 4,
+        return {
+          id: node.id,
+          label: node.label,
+          displayName: node.properties?.title || node.properties?.name || node.label,
+          color: colorFor(node.label),
+          ...props,
+        };
       });
 
-      // ── Interactions ───────────────────────────────────────
-      cy.on('tap', 'node', (e) => {
-        const node = e.target;
-        const data = node.data();
-        showNodeDetail(data);
-      });
+      // Prepare links (3d-force-graph expects "links" with source/target matching node ids)
+      const graphLinks = edges.map(edge => ({
+        source: edge.source,
+        target: edge.target,
+        type: edge.type,
+      }));
 
-      cy.on('tap', 'edge', (e) => {
-        const edge = e.target;
-        const data = edge.data();
-        showEdgeDetail(data);
-      });
+      // ── Initialize 3D graph ────────────────────────────────
+      graph = ForceGraph3D()(container)
+        .graphData({ nodes: graphNodes, links: graphLinks })
+        .backgroundColor('#0c0c12')
+        .nodeId('id')
+        // Node appearance
+        .nodeColor(d => d.color)
+        .nodeVal(d => d.label === 'Incident' ? 6 : d.label === 'Service' ? 4 : 2.5)
+        .nodeOpacity(0.95)
+        .nodeLabel(d => `${d.label}: ${d.displayName}`)
+        // Edge appearance
+        .linkColor(() => '#5a5a7a')
+        .linkWidth(1.2)
+        .linkOpacity(0.6)
+        .linkDirectionalArrowLength(4)
+        .linkDirectionalArrowRelPos(1)
+        .linkDirectionalArrowColor(() => '#7a7a9a')
+        .linkDirectionalParticles(1)
+        .linkDirectionalParticleWidth(1.5)
+        .linkDirectionalParticleColor(link => {
+          const sourceNode = graphNodes.find(n => n.id === (typeof link.source === 'object' ? link.source.id : link.source));
+          return sourceNode ? sourceNode.color : '#5a5a7a';
+        })
+        .linkLabel(d => d.type)
+        // Interactions
+        .onNodeClick(node => showNodeDetail(node))
+        .onLinkClick(link => showEdgeDetail(link))
+        .onBackgroundClick(() => closePanel())
+        // Performance
+        .warmupTicks(80)
+        .cooldownTicks(200);
 
-      cy.on('tap', (e) => {
-        if (e.target === cy) closePanel();
-      });
+      // Fit camera after layout settles
+      setTimeout(() => {
+        graph.zoomToFit(600, 60);
+      }, 2000);
     }
 
     // ── Detail panel ───────────────────────────────────────
@@ -469,18 +434,15 @@
       title.textContent = 'Node Details';
 
       const color = colorFor(data.label);
-      const displayName = data.displayName || data.label;
 
-      // Build properties list, excluding internal keys
-      const skip = new Set(['id', 'label', 'displayName']);
-      const props = Object.entries(data).filter(([k]) => !skip.has(k));
+      const skip = new Set(['id', 'label', 'displayName', 'color', '__threeObj', 'index', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'fx', 'fy', 'fz']);
+      const props = Object.entries(data).filter(([k, v]) => !skip.has(k) && typeof v !== 'object');
 
       let html = `<div class="detail-label-tag" style="background:${esc(color)}">${esc(data.label)}</div>`;
-      html += `<div class="detail-section"><div class="key">ID</div><div class="val">${esc(String(data.id))}</div></div>`;
+      html += `<div class="detail-section"><div class="key">Name</div><div class="val">${esc(data.displayName)}</div></div>`;
 
       for (const [key, value] of props) {
-        const display = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
-        html += `<div class="detail-section"><div class="key">${esc(key)}</div><div class="val">${esc(display)}</div></div>`;
+        html += `<div class="detail-section"><div class="key">${esc(key)}</div><div class="val">${esc(String(value))}</div></div>`;
       }
 
       body.innerHTML = html;
@@ -494,9 +456,12 @@
 
       title.textContent = 'Relationship';
 
+      const sourceName = typeof data.source === 'object' ? (data.source.displayName || data.source.label) : data.source;
+      const targetName = typeof data.target === 'object' ? (data.target.displayName || data.target.label) : data.target;
+
       let html = `<div class="edge-type-tag">${esc(data.type)}</div>`;
-      html += `<div class="detail-section"><div class="key">Source</div><div class="val">${esc(String(data.source))}</div></div>`;
-      html += `<div class="detail-section"><div class="key">Target</div><div class="val">${esc(String(data.target))}</div></div>`;
+      html += `<div class="detail-section"><div class="key">Source</div><div class="val">${esc(String(sourceName))}</div></div>`;
+      html += `<div class="detail-section"><div class="key">Target</div><div class="val">${esc(String(targetName))}</div></div>`;
 
       body.innerHTML = html;
       panel.classList.add('open');
@@ -504,12 +469,20 @@
 
     function closePanel() {
       document.getElementById('detailPanel').classList.remove('open');
-      if (cy) cy.elements().unselect();
     }
 
     // ── Keyboard shortcut ──────────────────────────────────
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') closePanel();
+    });
+
+    // ── Handle resize ──────────────────────────────────────
+    window.addEventListener('resize', () => {
+      if (graph) {
+        const container = document.getElementById('graph-container');
+        graph.width(container.clientWidth);
+        graph.height(container.clientHeight);
+      }
     });
 
     // ── Init ───────────────────────────────────────────────
