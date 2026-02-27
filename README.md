@@ -2,8 +2,59 @@
 
 Self-healing infrastructure agent that monitors, detects, analyzes, and remediates cloud incidents autonomously — then writes post-mortems that make it smarter over time.
 
+---
+
+## What is Ghost Operator? (Plain English)
+
+Imagine you run a website or app that lives on cloud servers. Sometimes those servers crash, run out of memory, or stop responding — often at 3 AM when nobody is watching. Normally, a human engineer gets paged, wakes up, diagnoses the problem, fixes it, and writes a report about what happened.
+
+**Ghost Operator does all of that automatically.**
+
+It watches your infrastructure around the clock. When something breaks, it figures out what went wrong, takes action to fix it (like restarting the crashed service or spinning up a backup), and then writes a detailed report. Most importantly, it **remembers every incident** — so the next time something similar happens, it already knows what worked before and can respond faster.
+
+Think of it as an on-call engineer that never sleeps, never forgets, and gets better at its job with every incident it handles.
+
+---
+
+## Example Incident
+
+Below is a walkthrough of a real-world scenario Ghost Operator is designed to handle. This shows how the system moves from detection through resolution — fully autonomously.
+
+### Scenario: Render Web Service Goes Down
+
+> **Summary:** Ghost Operator detected that a Render-hosted API service had become suspended due to a failed health check. Within 60 seconds, it identified the root cause as a memory exhaustion crash (OOM), restarted the service, scaled it to two instances for resilience, and generated a post-mortem — all without human intervention.
+
+**Detection** — During a routine 60-second scan, the Detector Agent's Render health check found that the service `ghost-operator-api` had a status of `suspended`. Simultaneously, a Tavily web search picked up a user report on the Render status page mentioning degraded API performance.
+
+**Analysis** — The Analyzer Agent combined both signals into a single incident. It extracted the affected service (`render`), identified the error pattern (`OOM` — out of memory), classified severity as `critical`, and inferred the root cause as memory exhaustion.
+
+**Remediation** — The Remediator Agent queried the Neo4j knowledge graph and found a similar past incident where a restart resolved the issue. Based on the `critical` severity, it executed two actions via the Render API:
+1. **Restart** the `ghost-operator-api` service
+2. **Scale** the service from 1 to 2 instances to add resilience
+
+**Report** — The Reporter Agent generated a post-mortem and stored it in both Neo4j (linked in the knowledge graph) and Senso (searchable memory), so the system can reference this incident if a similar failure occurs in the future.
+
+```
+Incident Timeline
+─────────────────
+10:34:22  [DETECT]     Render health check: ghost-operator-api is suspended
+10:34:23  [DETECT]     Tavily: "Render API degraded performance" reported
+10:34:25  [ANALYZE]    Severity: CRITICAL | Services: render | Error: OOM
+10:34:25  [ANALYZE]    Root cause: Memory exhaustion
+10:34:28  [REMEDIATE]  Restarted ghost-operator-api → Success
+10:34:31  [REMEDIATE]  Scaled ghost-operator-api to 2 instances → Success
+10:34:35  [REPORT]     Post-mortem generated and stored in Neo4j + Senso
+10:34:35  [SYSTEM]     Cycle complete — service recovered
+```
+
+> **What just happened?** In under 15 seconds, Ghost Operator noticed a crashed service, figured out it ran out of memory, restarted it, added a backup instance so it's harder to crash again, and wrote a report explaining everything — all on its own.
+
+---
+
 ## Table of Contents
 
+- [What is Ghost Operator?](#what-is-ghost-operator-plain-english)
+- [Example Incident](#example-incident)
 - [Architecture Overview](#architecture-overview)
 - [Pipeline](#pipeline)
 - [Core Components](#core-components)
