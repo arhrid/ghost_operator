@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ghost Operator — Dashboard</title>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --border: #23232e;
+      --text: #e0e0e8;
+      --text-dim: #8888a0;
+      --accent: #7c5cff;
+      --accent-glow: rgba(124,92,255,0.15);
+      --green: #34d399;
+      --yellow: #fbbf24;
+      --red: #ef4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 20px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 1px;
+    }
+
+    header h1 span { color: var(--accent); }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .status-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 16px;
+      padding: 24px 32px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+      overflow: hidden;
+    }
+
+    .card h2 {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 16px;
+    }
+
+    /* Health Card */
+    .health-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .health-stat {
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .health-stat .value {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .health-stat .label {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* Incident Feed */
+    .incidents-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .incident-item {
+      padding: 12px;
+      border-left: 3px solid var(--border);
+      margin-bottom: 8px;
+      background: var(--bg);
+      border-radius: 0 6px 6px 0;
+    }
+
+    .incident-item.critical { border-left-color: var(--red); }
+    .incident-item.warning { border-left-color: var(--yellow); }
+    .incident-item.info { border-left-color: var(--accent); }
+
+    .incident-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .incident-meta {
+      font-size: 11px;
+      color: var(--text-dim);
+      display: flex;
+      gap: 12px;
+    }
+
+    .severity-tag {
+      display: inline-block;
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .severity-tag.critical { background: rgba(239,68,68,0.15); color: var(--red); }
+    .severity-tag.warning { background: rgba(251,191,36,0.15); color: var(--yellow); }
+    .severity-tag.info { background: var(--accent-glow); color: var(--accent); }
+
+    /* Activity Log */
+    .activity-list {
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    .activity-item {
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .activity-time {
+      color: var(--text-dim);
+      flex-shrink: 0;
+      width: 60px;
+    }
+
+    .activity-agent {
+      color: var(--accent);
+      flex-shrink: 0;
+      width: 80px;
+      font-weight: 600;
+    }
+
+    .activity-msg { color: var(--text); }
+
+    /* Graph Stats */
+    .graph-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .graph-stat {
+      text-align: center;
+      padding: 10px;
+      background: var(--bg);
+      border-radius: 6px;
+    }
+
+    .graph-stat .num {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .graph-stat .lbl {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .empty-state {
+      color: var(--text-dim);
+      font-size: 12px;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .trigger-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .trigger-btn:hover { opacity: 0.85; }
+    .trigger-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1><span>GHOST</span> OPERATOR</h1>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <button class="trigger-btn" onclick="triggerScan()">Trigger Scan</button>
+      <div class="status-badge">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Connecting...</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="grid">
+    <!-- Health / Overview -->
+    <div class="card">
+      <h2>System Health</h2>
+      <div class="health-grid">
+        <div class="health-stat">
+          <div class="value" id="hUptime">--</div>
+          <div class="label">Uptime (min)</div>
+        </div>
+        <div class="health-stat">
+          <div class="value" id="hIncidents">0</div>
+          <div class="label">Incidents</div>
+        </div>
+        <div class="health-stat">
+          <div class="value" id="hLastCheck">--</div>
+          <div class="label">Last Check</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Knowledge Graph Stats -->
+    <div class="card">
+      <h2>Knowledge Graph</h2>
+      <div class="graph-stats">
+        <div class="graph-stat"><div class="num" id="gIncidents">0</div><div class="lbl">Incidents</div></div>
+        <div class="graph-stat"><div class="num" id="gServices">0</div><div class="lbl">Services</div></div>
+        <div class="graph-stat"><div class="num" id="gErrors">0</div><div class="lbl">Errors</div></div>
+        <div class="graph-stat"><div class="num" id="gRootCauses">0</div><div class="lbl">Root Causes</div></div>
+        <div class="graph-stat"><div class="num" id="gRemediations">0</div><div class="lbl">Remediations</div></div>
+        <div class="graph-stat"><div class="num" id="gPostMortems">0</div><div class="lbl">Post-Mortems</div></div>
+      </div>
+    </div>
+
+    <!-- Incident Feed -->
+    <div class="card">
+      <h2>Incident Feed</h2>
+      <div class="incidents-list" id="incidentFeed">
+        <div class="empty-state">No incidents detected yet. Ghost Operator is watching...</div>
+      </div>
+    </div>
+
+    <!-- Activity Log -->
+    <div class="card">
+      <h2>Agent Activity</h2>
+      <div class="activity-list" id="activityLog">
+        <div class="empty-state">Waiting for agent activity...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const BASE = window.location.origin;
+
+    // ── SSE Connection ──────────────────────────────────────
+    function connectSSE() {
+      const es = new EventSource(`${BASE}/events`);
+
+      es.onopen = () => {
+        document.getElementById('statusDot').style.background = 'var(--green)';
+        document.getElementById('statusText').textContent = 'Connected';
+      };
+
+      es.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === 'activity') addActivity(msg.payload);
+          if (msg.type === 'incident' || msg.type === 'incident_complete') addIncident(msg.payload);
+        } catch {}
+      };
+
+      es.onerror = () => {
+        document.getElementById('statusDot').style.background = 'var(--red)';
+        document.getElementById('statusText').textContent = 'Disconnected';
+        setTimeout(connectSSE, 3000);
+      };
+    }
+
+    // ── Render helpers ──────────────────────────────────────
+    function timeAgo(iso) {
+      const d = new Date(iso);
+      const now = Date.now();
+      const s = Math.floor((now - d) / 1000);
+      if (s < 60) return `${s}s ago`;
+      if (s < 3600) return `${Math.floor(s/60)}m ago`;
+      return `${Math.floor(s/3600)}h ago`;
+    }
+
+    function shortTime(iso) {
+      return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    }
+
+    function addIncident(incident) {
+      const feed = document.getElementById('incidentFeed');
+      if (feed.querySelector('.empty-state')) feed.innerHTML = '';
+
+      // Remove existing entry for same ID (update)
+      const existing = feed.querySelector(`[data-id="${incident.id}"]`);
+      if (existing) existing.remove();
+
+      const el = document.createElement('div');
+      el.className = `incident-item ${incident.severity}`;
+      el.dataset.id = incident.id;
+      el.innerHTML = `
+        <div class="incident-title">
+          <span class="severity-tag ${incident.severity}">${incident.severity}</span>
+          ${esc(incident.title)}
+        </div>
+        <div class="incident-meta">
+          <span>${timeAgo(incident.detectedAt)}</span>
+          <span>${incident.services.join(', ') || 'unknown'}</span>
+          <span>${incident.remediationActions?.length ?? 0} action(s)</span>
+        </div>
+      `;
+      feed.prepend(el);
+    }
+
+    function addActivity(entry) {
+      const log = document.getElementById('activityLog');
+      if (log.querySelector('.empty-state')) log.innerHTML = '';
+
+      const el = document.createElement('div');
+      el.className = 'activity-item';
+      el.innerHTML = `
+        <span class="activity-time">${shortTime(entry.timestamp)}</span>
+        <span class="activity-agent">${esc(entry.agent)}</span>
+        <span class="activity-msg">${esc(entry.message)}</span>
+      `;
+      log.prepend(el);
+
+      // Keep max 100 entries in DOM
+      while (log.children.length > 100) log.removeChild(log.lastChild);
+    }
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s ?? '';
+      return d.innerHTML;
+    }
+
+    // ── Polling for health + graph stats ────────────────────
+    async function fetchHealth() {
+      try {
+        const r = await fetch(`${BASE}/health`);
+        const d = await r.json();
+        document.getElementById('hUptime').textContent = Math.floor(d.uptime / 60);
+        document.getElementById('hIncidents').textContent = d.incidents;
+        document.getElementById('hLastCheck').textContent = d.lastCheck ? timeAgo(d.lastCheck) : '--';
+      } catch {}
+    }
+
+    async function fetchGraphStats() {
+      try {
+        const r = await fetch(`${BASE}/api/graph/stats`);
+        const d = await r.json();
+        document.getElementById('gIncidents').textContent = d.incidents;
+        document.getElementById('gServices').textContent = d.services;
+        document.getElementById('gErrors').textContent = d.errors;
+        document.getElementById('gRootCauses').textContent = d.rootCauses;
+        document.getElementById('gRemediations').textContent = d.remediations;
+        document.getElementById('gPostMortems').textContent = d.postMortems;
+      } catch {}
+    }
+
+    async function fetchInitialData() {
+      try {
+        const [incR, actR] = await Promise.all([
+          fetch(`${BASE}/api/incidents`),
+          fetch(`${BASE}/api/activity`),
+        ]);
+        const incidents = await incR.json();
+        const activities = await actR.json();
+
+        for (const inc of incidents.reverse()) addIncident(inc);
+        for (const act of activities.reverse()) addActivity(act);
+      } catch {}
+    }
+
+    async function triggerScan() {
+      const btn = document.querySelector('.trigger-btn');
+      btn.disabled = true;
+      btn.textContent = 'Scanning...';
+      try {
+        await fetch(`${BASE}/api/trigger`, { method: 'POST' });
+      } catch {}
+      setTimeout(() => {
+        btn.disabled = false;
+        btn.textContent = 'Trigger Scan';
+      }, 5000);
+    }
+
+    // ── Init ────────────────────────────────────────────────
+    connectSSE();
+    fetchHealth();
+    fetchGraphStats();
+    fetchInitialData();
+    setInterval(fetchHealth, 15000);
+    setInterval(fetchGraphStats, 30000);
+  </script>
+</body>
+</html>

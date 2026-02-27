@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.yutori.com)",
+      "WebFetch(domain:docs.senso.ai)",
+      "WebSearch",
+      "WebFetch(domain:www.senso.ai)",
+      "WebFetch(domain:pypi.org)",
+      "Bash(git checkout:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
