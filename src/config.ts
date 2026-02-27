@@ -24,6 +24,7 @@ export const config = {
     uri: env('NEO4J_URI', 'bolt://localhost:7687'),
     user: env('NEO4J_USER', 'neo4j'),
     password: env('NEO4J_PASSWORD', 'password'),
+    database: env('NEO4J_DATABASE', 'neo4j'),
   },
 
   render: {

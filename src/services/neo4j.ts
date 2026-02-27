@@ -5,15 +5,17 @@ import { Incident, RemediationAction, PostMortem, GraphStats } from '../types';
 export class Neo4jClient {
   private driver: Driver | null = null;
 
-  connect(): void {
+  async connect(): Promise<void> {
     try {
       this.driver = neo4j.driver(
         config.neo4j.uri,
         neo4j.auth.basic(config.neo4j.user, config.neo4j.password)
       );
-      console.log('[neo4j] Connected');
+      const serverInfo = await this.driver.getServerInfo();
+      console.log(`[neo4j] Connected to ${serverInfo.address} (${serverInfo.protocolVersion})`);
     } catch (error: any) {
       console.error('[neo4j] Connection failed:', error.message);
+      this.driver = null;
     }
   }
 
@@ -29,7 +31,7 @@ export class Neo4jClient {
       console.warn('[neo4j] Not connected');
       return null;
     }
-    return this.driver.session();
+    return this.driver.session({ database: config.neo4j.database });
   }
 
   async createIncident(incident: Incident): Promise<void> {
