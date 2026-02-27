@@ -4,7 +4,7 @@
   "description": "Self-healing infrastructure agent that monitors, detects, and remediates incidents autonomously",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && cp -r src/dashboard dist/dashboard",
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts"
   },

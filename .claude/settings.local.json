@@ -27,7 +27,8 @@
       "WebFetch(domain:blog.yutori.com)",
       "Bash(node:*)",
       "Bash(sleep 10:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "Bash(sleep 90:*)"
     ]
   }
 }
