@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 function env(key: string, fallback?: string): string {
   const value = process.env[key] ?? fallback;
   if (!value) {
