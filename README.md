@@ -267,64 +267,130 @@ Ghost Operator ships with a real-time monitoring dashboard at the `/dashboard` e
 
 ## Installation Instructions
 
-> **Note:** Detailed installation and deployment instructions are coming soon. The section below outlines the current development setup.
-
 ### Prerequisites
 
-- Node.js >= 20.0
-- npm
-- Access to the following services (API keys required):
-  - [Tavily](https://tavily.com) — web search API
-  - [Yutori](https://yutori.ai) — web scouting API
-  - [Neo4j](https://neo4j.com) — graph database (AuraDB or self-hosted)
-  - [Render](https://render.com) — deployment platform API
-  - [Senso.ai](https://senso.ai) — agent memory API
+- **Node.js** >= 20.0 ([download](https://nodejs.org))
+- **npm** (included with Node.js)
+- **Git**
 
-### Setup
+### 1. Clone and Install
 
 ```bash
-# Clone the repository
-git clone <repository-url>
+git clone https://github.com/arhrid/ghost_operator.git
 cd ghost_operator
-
-# Install dependencies
 npm install
+```
 
-# Copy the environment template and fill in your API keys
+### 2. Configure API Keys
+
+Ghost Operator integrates with five external services. You'll need to sign up for each and obtain an API key.
+
+```bash
 cp .env.example .env
 ```
 
-### Environment Variables
+Open `.env` and fill in the values:
 
-```env
-PORT=3000
-TAVILY_API_KEY=tvly-xxxxx
-YUTORI_API_KEY=yutori-xxxxx
-NEO4J_URI=bolt://<host>:7687
-NEO4J_USER=neo4j
-NEO4J_PASSWORD=<password>
-NEO4J_DATABASE=neo4j
-RENDER_API_KEY=rnd_xxxxx
-SENSO_API_KEY=senso-xxxxx
-SENSO_ORGANIZATION_ID=org-xxxxx
-```
+| Variable | Required | Where to Get It |
+|----------|----------|-----------------|
+| `PORT` | No | Defaults to `3000` |
+| `TAVILY_API_KEY` | Yes | Sign up at [tavily.com](https://tavily.com) and generate an API key from the dashboard |
+| `YUTORI_API_KEY` | Yes | Sign up at [yutori.ai](https://yutori.ai) and create an API key |
+| `NEO4J_URI` | Yes | Create a free instance at [Neo4j Sandbox](https://sandbox.neo4j.com) — use the Bolt URL (e.g. `bolt://xxx.databases.neo4j.io:7687`) |
+| `NEO4J_USER` | Yes | Provided by your Neo4j instance (default: `neo4j`) |
+| `NEO4J_PASSWORD` | Yes | Provided by your Neo4j instance |
+| `NEO4J_DATABASE` | No | Defaults to `neo4j` |
+| `RENDER_API_KEY` | Yes | Go to [Render Dashboard](https://dashboard.render.com) → Account Settings → API Keys |
+| `SENSO_API_KEY` | Yes | Sign up at [senso.ai](https://senso.ai) and generate an API key |
+| `SENSO_ORGANIZATION_ID` | Yes | Found in your Senso.ai organization settings |
 
-### Running
+### 3. Set Up Neo4j
+
+Ghost Operator uses Neo4j as its knowledge graph. The quickest way to get started:
+
+1. Go to [sandbox.neo4j.com](https://sandbox.neo4j.com) and create a free **Blank Sandbox**
+2. Once provisioned, copy the **Bolt URL**, **Username**, and **Password** into your `.env`:
+   ```env
+   NEO4J_URI=bolt://<your-sandbox-host>:7687
+   NEO4J_USER=neo4j
+   NEO4J_PASSWORD=<your-sandbox-password>
+   NEO4J_DATABASE=neo4j
+   ```
+3. Ghost Operator will automatically create the necessary nodes and relationships on first run — no manual schema setup is needed
+
+> **Note:** Neo4j Sandbox instances expire after a few days. For persistent usage, consider [Neo4j AuraDB Free](https://neo4j.com/cloud/aura-free/) or a self-hosted instance.
+
+### 4. Run Locally
+
+**Development** (auto-reloads with ts-node):
 
 ```bash
-# Development (with ts-node)
 npm run dev
+```
 
-# Production build
+**Production build:**
+
+```bash
 npm run build
 npm start
 ```
 
-### Deployment
+Once running, open your browser to:
+- **Dashboard:** [http://localhost:3000/dashboard](http://localhost:3000/dashboard)
+- **Health check:** [http://localhost:3000/health](http://localhost:3000/health)
 
-Ghost Operator is configured for deployment on [Render](https://render.com) via the included `render.yaml`. See the file for service configuration details.
+Ghost Operator will begin its detection cycle every 60 seconds automatically. You can also trigger a scan manually from the dashboard or via `POST /api/trigger`.
 
-<!-- TODO: Add detailed deployment guide for production environments -->
+### 5. Deploy to Render
+
+Ghost Operator includes a `render.yaml` for one-click deployment on [Render](https://render.com).
+
+**Option A — Blueprint (recommended):**
+
+1. Push your repository to GitHub
+2. Go to [Render Dashboard](https://dashboard.render.com) → **New** → **Blueprint**
+3. Connect your GitHub repo — Render will detect `render.yaml` automatically
+4. Fill in the environment variables when prompted
+5. Click **Apply** to deploy
+
+**Option B — Manual service:**
+
+1. Go to [Render Dashboard](https://dashboard.render.com) → **New** → **Web Service**
+2. Connect your GitHub repo
+3. Configure:
+   - **Build Command:** `npm install && npm run build`
+   - **Start Command:** `npm start`
+   - **Health Check Path:** `/health`
+4. Add all environment variables from your `.env` under the **Environment** tab
+5. Deploy
+
+Once deployed, the dashboard will be available at your Render service URL (e.g. `https://ghost-operator.onrender.com/dashboard`).
+
+### Verify Installation
+
+After starting (locally or on Render), confirm everything is working:
+
+```bash
+# Check system health
+curl http://localhost:3000/health
+
+# Trigger a manual detection scan
+curl -X POST http://localhost:3000/api/trigger
+
+# View incidents
+curl http://localhost:3000/api/incidents
+```
+
+Expected `/health` response:
+
+```json
+{
+  "status": "ok",
+  "uptime": 12,
+  "incidents": 0,
+  "lastDetection": null
+}
+```
 
 ---
 
