@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Self-healing infrastructure agent that monitors, detects, and remediates incidents autonomously",
   "main": "dist/index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "build": "tsc && cp -r src/dashboard dist/dashboard",
     "start": "node dist/index.js",
