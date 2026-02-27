@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ghost Operator — Knowledge Graph</title>
+  <script src="https://unpkg.com/cytoscape@3.30.4/dist/cytoscape.min.js"></script>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --border: #23232e;
+      --text: #e0e0e8;
+      --text-dim: #8888a0;
+      --accent: #7c5cff;
+      --accent-glow: rgba(124,92,255,0.15);
+      --green: #34d399;
+      --yellow: #fbbf24;
+      --red: #ef4444;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 24px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .top-bar a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-size: 12px;
+      transition: color 0.15s;
+    }
+
+    .top-bar a:hover { color: var(--text); }
+
+    .top-bar h1 {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      color: var(--accent);
+    }
+
+    .top-bar .counts {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .top-bar .counts span {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* ── Graph canvas ───────────────────────────────────── */
+    #cy {
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* ── Legend ──────────────────────────────────────────── */
+    .legend {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      z-index: 10;
+    }
+
+    .legend-title {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 2px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-dim);
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Detail panel ───────────────────────────────────── */
+    .detail-panel {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 340px;
+      height: 100vh;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      transform: translateX(100%);
+      transition: transform 0.2s ease;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .detail-panel.open { transform: translateX(0); }
+
+    .detail-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .detail-header h2 {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .detail-close {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 18px;
+      font-family: inherit;
+      line-height: 1;
+    }
+
+    .detail-close:hover { color: var(--text); }
+
+    .detail-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+    }
+
+    .detail-label-tag {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+
+    .detail-section {
+      margin-bottom: 14px;
+    }
+
+    .detail-section .key {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 3px;
+    }
+
+    .detail-section .val {
+      font-size: 12px;
+      color: var(--text);
+      word-break: break-word;
+      white-space: pre-wrap;
+    }
+
+    .edge-type-tag {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    /* ── Empty state ─────────────────────────────────────── */
+    .empty-state {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: var(--text-dim);
+    }
+
+    .empty-state h2 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .empty-state p {
+      font-size: 12px;
+      max-width: 320px;
+      line-height: 1.6;
+    }
+
+    /* ── Scrollbar ───────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <div class="top-bar">
+    <a href="/dashboard/">← Back to Dashboard</a>
+    <h1>KNOWLEDGE GRAPH</h1>
+    <div class="counts"><span id="nodeCount">0</span> nodes &middot; <span id="edgeCount">0</span> edges</div>
+  </div>
+
+  <div id="cy"></div>
+
+  <!-- Legend -->
+  <div class="legend" id="legend">
+    <div class="legend-title">Node Types</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div>Incident</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#7c5cff"></div>Service</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div>Error</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div>Root Cause</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div>Remediation</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#60a5fa"></div>Post-Mortem</div>
+  </div>
+
+  <!-- Detail Panel -->
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-header">
+      <h2 id="detailTitle">Details</h2>
+      <button class="detail-close" onclick="closePanel()">&times;</button>
+    </div>
+    <div class="detail-body" id="detailBody"></div>
+  </div>
+
+  <script>
+    const BASE = window.location.origin;
+    const NODE_COLORS = {
+      Incident:    '#ef4444',
+      Service:     '#7c5cff',
+      Error:       '#fbbf24',
+      RootCause:   '#f97316',
+      Remediation: '#34d399',
+      PostMortem:  '#60a5fa',
+    };
+    const DEFAULT_COLOR = '#555566';
+
+    let cy;
+
+    function colorFor(label) {
+      return NODE_COLORS[label] || DEFAULT_COLOR;
+    }
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s ?? '';
+      return d.innerHTML;
+    }
+
+    // ── Fetch graph and render ─────────────────────────────
+    async function init() {
+      let nodes = [];
+      let edges = [];
+
+      try {
+        const r = await fetch(`${BASE}/api/graph`);
+        const data = await r.json();
+        nodes = data.nodes || [];
+        edges = data.edges || [];
+      } catch {
+        // Network error or server unavailable
+      }
+
+      document.getElementById('nodeCount').textContent = nodes.length;
+      document.getElementById('edgeCount').textContent = edges.length;
+
+      if (nodes.length === 0) {
+        document.getElementById('cy').innerHTML = `
+          <div class="empty-state">
+            <h2>No graph data yet</h2>
+            <p>Run a scan from the dashboard to detect incidents and build the knowledge graph.</p>
+          </div>
+        `;
+        document.getElementById('legend').style.display = 'none';
+        return;
+      }
+
+      const elements = [];
+
+      for (const node of nodes) {
+        elements.push({
+          data: {
+            id: node.id,
+            label: node.label,
+            displayName: node.properties?.title || node.properties?.name || node.label,
+            ...node.properties,
+          },
+        });
+      }
+
+      for (const edge of edges) {
+        elements.push({
+          data: {
+            id: `${edge.source}-${edge.type}-${edge.target}`,
+            source: edge.source,
+            target: edge.target,
+            type: edge.type,
+          },
+        });
+      }
+
+      cy = cytoscape({
+        container: document.getElementById('cy'),
+        elements,
+        style: [
+          {
+            selector: 'node',
+            style: {
+              'background-color': (el) => colorFor(el.data('label')),
+              'label': 'data(displayName)',
+              'font-size': '11px',
+              'font-family': "'SF Mono', 'Fira Code', monospace",
+              'color': '#e0e0e8',
+              'text-outline-color': '#0a0a0f',
+              'text-outline-width': 2,
+              'text-valign': 'bottom',
+              'text-margin-y': 6,
+              'width': 28,
+              'height': 28,
+              'border-width': 2,
+              'border-color': (el) => colorFor(el.data('label')),
+              'border-opacity': 0.3,
+            },
+          },
+          {
+            selector: 'node:active',
+            style: {
+              'overlay-opacity': 0,
+            },
+          },
+          {
+            selector: 'node:selected',
+            style: {
+              'border-width': 3,
+              'border-color': '#ffffff',
+              'border-opacity': 1,
+            },
+          },
+          {
+            selector: 'edge',
+            style: {
+              'width': 1.5,
+              'line-color': '#33334a',
+              'target-arrow-color': '#33334a',
+              'target-arrow-shape': 'triangle',
+              'arrow-scale': 0.8,
+              'curve-style': 'bezier',
+              'label': 'data(type)',
+              'font-size': '9px',
+              'font-family': "'SF Mono', 'Fira Code', monospace",
+              'color': '#555566',
+              'text-rotation': 'autorotate',
+              'text-outline-color': '#0a0a0f',
+              'text-outline-width': 1.5,
+            },
+          },
+          {
+            selector: 'edge:selected',
+            style: {
+              'line-color': '#7c5cff',
+              'target-arrow-color': '#7c5cff',
+              'color': '#7c5cff',
+            },
+          },
+        ],
+        layout: {
+          name: 'cose',
+          animate: true,
+          animationDuration: 800,
+          nodeRepulsion: () => 8000,
+          idealEdgeLength: () => 120,
+          gravity: 0.3,
+          padding: 40,
+        },
+        minZoom: 0.2,
+        maxZoom: 4,
+      });
+
+      // ── Interactions ───────────────────────────────────────
+      cy.on('tap', 'node', (e) => {
+        const node = e.target;
+        const data = node.data();
+        showNodeDetail(data);
+      });
+
+      cy.on('tap', 'edge', (e) => {
+        const edge = e.target;
+        const data = edge.data();
+        showEdgeDetail(data);
+      });
+
+      cy.on('tap', (e) => {
+        if (e.target === cy) closePanel();
+      });
+    }
+
+    // ── Detail panel ───────────────────────────────────────
+    function showNodeDetail(data) {
+      const panel = document.getElementById('detailPanel');
+      const body = document.getElementById('detailBody');
+      const title = document.getElementById('detailTitle');
+
+      title.textContent = 'Node Details';
+
+      const color = colorFor(data.label);
+      const displayName = data.displayName || data.label;
+
+      // Build properties list, excluding internal keys
+      const skip = new Set(['id', 'label', 'displayName']);
+      const props = Object.entries(data).filter(([k]) => !skip.has(k));
+
+      let html = `<div class="detail-label-tag" style="background:${esc(color)}">${esc(data.label)}</div>`;
+      html += `<div class="detail-section"><div class="key">ID</div><div class="val">${esc(String(data.id))}</div></div>`;
+
+      for (const [key, value] of props) {
+        const display = typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value);
+        html += `<div class="detail-section"><div class="key">${esc(key)}</div><div class="val">${esc(display)}</div></div>`;
+      }
+
+      body.innerHTML = html;
+      panel.classList.add('open');
+    }
+
+    function showEdgeDetail(data) {
+      const panel = document.getElementById('detailPanel');
+      const body = document.getElementById('detailBody');
+      const title = document.getElementById('detailTitle');
+
+      title.textContent = 'Relationship';
+
+      let html = `<div class="edge-type-tag">${esc(data.type)}</div>`;
+      html += `<div class="detail-section"><div class="key">Source</div><div class="val">${esc(String(data.source))}</div></div>`;
+      html += `<div class="detail-section"><div class="key">Target</div><div class="val">${esc(String(data.target))}</div></div>`;
+
+      body.innerHTML = html;
+      panel.classList.add('open');
+    }
+
+    function closePanel() {
+      document.getElementById('detailPanel').classList.remove('open');
+      if (cy) cy.elements().unselect();
+    }
+
+    // ── Keyboard shortcut ──────────────────────────────────
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closePanel();
+    });
+
+    // ── Init ───────────────────────────────────────────────
+    init();
+  </script>
+</body>
+</html>
