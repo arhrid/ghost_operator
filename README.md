@@ -4,7 +4,7 @@ Self-healing infrastructure agent that monitors, detects, analyzes, and remediat
 
 ---
 
-## What is Ghost Operator? (Plain English)
+## What is Ghost Operator? (Simple Terms)
 
 Imagine you run a website or app that lives on cloud servers. Sometimes those servers crash, run out of memory, or stop responding — often at 3 AM when nobody is watching. Normally, a human engineer gets paged, wakes up, diagnoses the problem, fixes it, and writes a report about what happened.
 
