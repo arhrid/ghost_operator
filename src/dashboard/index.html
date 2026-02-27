@@ -43,6 +43,12 @@
 
     header h1 span { color: var(--accent); }
 
+    .header-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
     .status-badge {
       display: flex;
       align-items: center;
@@ -63,6 +69,143 @@
       50% { opacity: 0.4; }
     }
 
+    /* Buttons */
+    .trigger-btn {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .trigger-btn:hover { opacity: 0.85; }
+    .trigger-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Simulate Dropdown */
+    .simulate-dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .simulate-btn {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .simulate-btn:hover { border-color: var(--accent); }
+
+    .simulate-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      right: 0;
+      margin-top: 4px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      min-width: 200px;
+      z-index: 100;
+      overflow: hidden;
+    }
+
+    .simulate-menu.open { display: block; }
+
+    .simulate-option {
+      padding: 10px 16px;
+      font-size: 12px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .simulate-option:last-child { border-bottom: none; }
+    .simulate-option:hover { background: var(--accent-glow); color: var(--accent); }
+
+    /* Pipeline Visualization */
+    .pipeline-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 32px;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .pipeline-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      position: relative;
+      transition: all 0.4s ease;
+      min-width: 140px;
+      text-align: center;
+    }
+
+    .pipeline-stage.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-glow);
+      box-shadow: 0 0 20px rgba(124,92,255,0.3);
+    }
+
+    .pipeline-stage.done {
+      border-color: var(--green);
+      color: var(--green);
+      background: rgba(52,211,153,0.08);
+    }
+
+    .pipeline-stage .checkmark {
+      display: none;
+      margin-left: 6px;
+    }
+
+    .pipeline-stage.done .checkmark {
+      display: inline;
+    }
+
+    .pipeline-arrow {
+      color: var(--text-dim);
+      font-size: 18px;
+      margin: 0 8px;
+      transition: color 0.4s ease;
+    }
+
+    .pipeline-arrow.lit {
+      color: var(--accent);
+    }
+
+    @keyframes stageGlow {
+      0%, 100% { box-shadow: 0 0 20px rgba(124,92,255,0.3); }
+      50% { box-shadow: 0 0 35px rgba(124,92,255,0.5); }
+    }
+
+    .pipeline-stage.active {
+      animation: stageGlow 2s ease-in-out infinite;
+    }
+
+    /* Grid */
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -128,7 +271,11 @@
       margin-bottom: 8px;
       background: var(--bg);
       border-radius: 0 6px 6px 0;
+      cursor: pointer;
+      transition: background 0.2s;
     }
+
+    .incident-item:hover { background: #1a1a24; }
 
     .incident-item.critical { border-left-color: var(--red); }
     .incident-item.warning { border-left-color: var(--yellow); }
@@ -223,21 +370,154 @@
       padding: 40px 20px;
     }
 
-    .trigger-btn {
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
+    /* Incident Detail Panel */
+    .detail-overlay {
+      display: none;
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
     }
 
-    .trigger-btn:hover { opacity: 0.85; }
-    .trigger-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .detail-overlay.open { display: block; }
+
+    .detail-panel {
+      position: fixed;
+      top: 0;
+      right: -500px;
+      width: 500px;
+      height: 100vh;
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      z-index: 201;
+      overflow-y: auto;
+      transition: right 0.3s ease;
+      padding: 24px;
+    }
+
+    .detail-panel.open { right: 0; }
+
+    .detail-close {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 20px;
+      cursor: pointer;
+      position: absolute;
+      top: 16px;
+      right: 16px;
+    }
+
+    .detail-close:hover { color: var(--text); }
+
+    .detail-section {
+      margin-bottom: 20px;
+    }
+
+    .detail-section h3 {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 8px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .detail-section p, .detail-section pre {
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    .detail-section pre {
+      background: var(--bg);
+      padding: 10px;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-x: auto;
+    }
+
+    .detail-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      padding-right: 30px;
+    }
+
+    .detail-meta {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-bottom: 20px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .action-item {
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+
+    .action-item .action-type {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .action-item .action-desc {
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .action-item .action-reasoning {
+      font-size: 11px;
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    .action-item .action-status {
+      font-size: 10px;
+      margin-top: 4px;
+    }
+
+    .signal-item {
+      background: var(--bg);
+      border-radius: 6px;
+      padding: 10px;
+      margin-bottom: 6px;
+    }
+
+    .signal-source {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .signal-source.tavily { color: #f97316; }
+    .signal-source.yutori { color: #06b6d4; }
+    .signal-source.render_health { color: var(--green); }
+    .signal-source.manual { color: var(--text-dim); }
+
+    .validation-status {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .validation-status.passed { background: rgba(52,211,153,0.15); color: var(--green); }
+    .validation-status.failed { background: rgba(239,68,68,0.15); color: var(--red); }
+    .validation-status.pending { background: var(--accent-glow); color: var(--accent); }
 
     /* Scrollbar */
     ::-webkit-scrollbar { width: 4px; }
@@ -248,7 +528,15 @@
 <body>
   <header>
     <h1><span>GHOST</span> OPERATOR</h1>
-    <div style="display: flex; align-items: center; gap: 16px;">
+    <div class="header-controls">
+      <div class="simulate-dropdown">
+        <button class="simulate-btn" onclick="toggleSimMenu()">Simulate ▾</button>
+        <div class="simulate-menu" id="simMenu">
+          <div class="simulate-option" onclick="runSimulation('service_down')">Service Down</div>
+          <div class="simulate-option" onclick="runSimulation('high_latency')">High Latency</div>
+          <div class="simulate-option" onclick="runSimulation('memory_exhaustion')">Memory Exhaustion</div>
+        </div>
+      </div>
       <button class="trigger-btn" onclick="triggerScan()">Trigger Scan</button>
       <div class="status-badge">
         <div class="status-dot" id="statusDot"></div>
@@ -256,6 +544,17 @@
       </div>
     </div>
   </header>
+
+  <!-- Pipeline Visualization -->
+  <div class="pipeline-bar">
+    <div class="pipeline-stage" id="stage-detect">DETECT</div>
+    <div class="pipeline-arrow" id="arrow-1">→</div>
+    <div class="pipeline-stage" id="stage-analyze">ANALYZE</div>
+    <div class="pipeline-arrow" id="arrow-2">→</div>
+    <div class="pipeline-stage" id="stage-remediate">REMEDIATE<span class="checkmark">✓</span></div>
+    <div class="pipeline-arrow" id="arrow-3">→</div>
+    <div class="pipeline-stage" id="stage-report">REPORT</div>
+  </div>
 
   <div class="grid">
     <!-- Health / Overview -->
@@ -288,7 +587,6 @@
         <div class="graph-stat"><div class="num" id="gRemediations">0</div><div class="lbl">Remediations</div></div>
         <div class="graph-stat"><div class="num" id="gPostMortems">0</div><div class="lbl">Post-Mortems</div></div>
       </div>
-      <a href="/dashboard/graph.html" style="display:inline-block;margin-top:14px;font-size:12px;color:var(--accent);text-decoration:none;letter-spacing:0.5px;">Explore Graph →</a>
     </div>
 
     <!-- Incident Feed -->
@@ -308,8 +606,55 @@
     </div>
   </div>
 
+  <!-- Incident Detail Panel -->
+  <div class="detail-overlay" id="detailOverlay" onclick="closeDetail()"></div>
+  <div class="detail-panel" id="detailPanel">
+    <button class="detail-close" onclick="closeDetail()">✕</button>
+    <div id="detailContent"></div>
+  </div>
+
   <script>
     const BASE = window.location.origin;
+
+    // ── Pipeline State ─────────────────────────────────────────
+    const stages = ['detect', 'analyze', 'remediate', 'report'];
+
+    function resetPipeline() {
+      for (const s of stages) {
+        const el = document.getElementById('stage-' + s);
+        el.classList.remove('active', 'done');
+      }
+      for (let i = 1; i <= 3; i++) {
+        document.getElementById('arrow-' + i).classList.remove('lit');
+      }
+    }
+
+    function setStageActive(stage) {
+      const idx = stages.indexOf(stage);
+      if (idx < 0) return;
+
+      // Mark previous stages as done
+      for (let i = 0; i < idx; i++) {
+        const el = document.getElementById('stage-' + stages[i]);
+        el.classList.remove('active');
+        el.classList.add('done');
+        if (i < 3) document.getElementById('arrow-' + (i + 1)).classList.add('lit');
+      }
+
+      // Set current as active
+      const current = document.getElementById('stage-' + stage);
+      current.classList.remove('done');
+      current.classList.add('active');
+    }
+
+    function setStageDone(stage) {
+      const el = document.getElementById('stage-' + stage);
+      el.classList.remove('active');
+      el.classList.add('done');
+
+      const idx = stages.indexOf(stage);
+      if (idx < 3) document.getElementById('arrow-' + (idx + 1)).classList.add('lit');
+    }
 
     // ── SSE Connection ──────────────────────────────────────
     function connectSSE() {
@@ -323,8 +668,7 @@
       es.onmessage = (e) => {
         try {
           const msg = JSON.parse(e.data);
-          if (msg.type === 'activity') addActivity(msg.payload);
-          if (msg.type === 'incident' || msg.type === 'incident_complete') addIncident(msg.payload);
+          handleSSE(msg);
         } catch {}
       };
 
@@ -333,6 +677,47 @@
         document.getElementById('statusText').textContent = 'Disconnected';
         setTimeout(connectSSE, 3000);
       };
+    }
+
+    function handleSSE(msg) {
+      switch (msg.type) {
+        case 'activity':
+          addActivity(msg.payload);
+          // Also drive pipeline based on agent activity
+          if (msg.payload.agent === 'detector') setStageActive('detect');
+          if (msg.payload.agent === 'analyzer') setStageActive('analyze');
+          if (msg.payload.agent === 'remediator') setStageActive('remediate');
+          if (msg.payload.agent === 'reporter') setStageActive('report');
+          break;
+        case 'incident':
+        case 'incident_complete':
+          addIncident(msg.payload);
+          break;
+        case 'pipeline_start':
+          resetPipeline();
+          setStageActive('detect');
+          break;
+        case 'detection_complete':
+          setStageDone('detect');
+          break;
+        case 'analysis_complete':
+          setStageDone('analyze');
+          break;
+        case 'remediation_action':
+          setStageActive('remediate');
+          break;
+        case 'validation_complete':
+          if (msg.payload.healthy) {
+            setStageDone('remediate');
+          }
+          break;
+        case 'postmortem_complete':
+          setStageDone('report');
+          break;
+        case 'pipeline_complete':
+          for (const s of stages) setStageDone(s);
+          break;
+      }
     }
 
     // ── Render helpers ──────────────────────────────────────
@@ -360,6 +745,7 @@
       const el = document.createElement('div');
       el.className = `incident-item ${incident.severity}`;
       el.dataset.id = incident.id;
+      el.onclick = () => openDetail(incident.id);
       el.innerHTML = `
         <div class="incident-title">
           <span class="severity-tag ${incident.severity}">${incident.severity}</span>
@@ -369,6 +755,7 @@
           <span>${timeAgo(incident.detectedAt)}</span>
           <span>${incident.services.join(', ') || 'unknown'}</span>
           <span>${incident.remediationActions?.length ?? 0} action(s)</span>
+          ${incident.resolvedAt ? '<span style="color:var(--green)">Resolved</span>' : ''}
         </div>
       `;
       feed.prepend(el);
@@ -395,6 +782,129 @@
       const d = document.createElement('div');
       d.textContent = s ?? '';
       return d.innerHTML;
+    }
+
+    // ── Incident Detail Panel ────────────────────────────────
+    async function openDetail(incidentId) {
+      try {
+        const r = await fetch(`${BASE}/api/incidents/${incidentId}`);
+        if (!r.ok) return;
+        const inc = await r.json();
+
+        const content = document.getElementById('detailContent');
+        content.innerHTML = buildDetailHTML(inc);
+
+        document.getElementById('detailOverlay').classList.add('open');
+        document.getElementById('detailPanel').classList.add('open');
+      } catch {}
+    }
+
+    function closeDetail() {
+      document.getElementById('detailOverlay').classList.remove('open');
+      document.getElementById('detailPanel').classList.remove('open');
+    }
+
+    function buildDetailHTML(inc) {
+      let html = `
+        <div class="detail-title">
+          <span class="severity-tag ${inc.severity}">${inc.severity}</span>
+          ${esc(inc.title)}
+        </div>
+        <div class="detail-meta">
+          <span>Detected: ${shortTime(inc.detectedAt)}</span>
+          ${inc.resolvedAt ? `<span style="color:var(--green)">Resolved: ${shortTime(inc.resolvedAt)}</span>` : '<span style="color:var(--yellow)">Unresolved</span>'}
+          <span>Services: ${inc.services.join(', ') || 'none'}</span>
+        </div>
+      `;
+
+      // Signals
+      html += `<div class="detail-section"><h3>Detection Signals</h3>`;
+      for (const sig of inc.signals) {
+        html += `
+          <div class="signal-item">
+            <div class="signal-source ${sig.source}">${sig.source}</div>
+            <div style="font-size:12px;font-weight:600;margin-bottom:2px">${esc(sig.title)}</div>
+            <div style="font-size:11px;color:var(--text-dim)">${esc(sig.summary.substring(0, 200))}</div>
+          </div>
+        `;
+      }
+      html += `</div>`;
+
+      // Root Cause
+      if (inc.rootCause) {
+        html += `
+          <div class="detail-section">
+            <h3>Root Cause Analysis</h3>
+            <pre>${esc(inc.rootCause)}</pre>
+          </div>
+        `;
+      }
+
+      // Research Sources
+      if (inc.researchSources && inc.researchSources.length > 0) {
+        html += `<div class="detail-section"><h3>Research Sources (Yutori)</h3><ul style="font-size:11px;padding-left:16px;">`;
+        for (const src of inc.researchSources) {
+          html += `<li style="margin-bottom:4px;word-break:break-all">${esc(src)}</li>`;
+        }
+        html += `</ul></div>`;
+      }
+
+      // Remediation Actions
+      html += `<div class="detail-section"><h3>Remediation Actions</h3>`;
+      if (inc.remediationActions.length === 0) {
+        html += `<p style="color:var(--text-dim)">No actions taken</p>`;
+      }
+      for (const action of inc.remediationActions) {
+        const statusColor = action.success ? 'var(--green)' : 'var(--red)';
+        const validatedBadge = action.validated === true
+          ? '<span class="validation-status passed">Validated</span>'
+          : action.validated === false
+          ? '<span class="validation-status failed">Failed</span>'
+          : '';
+
+        html += `
+          <div class="action-item">
+            <div class="action-type">${action.type} → ${esc(action.targetService)}</div>
+            <div class="action-desc">${esc(action.description)}</div>
+            ${action.reasoning ? `<div class="action-reasoning">${esc(action.reasoning)}</div>` : ''}
+            <div class="action-status">
+              <span style="color:${statusColor}">${action.success ? 'Success' : 'Failed'}</span>
+              <span style="color:var(--text-dim);margin-left:8px">${shortTime(action.executedAt)}</span>
+              ${validatedBadge}
+            </div>
+          </div>
+        `;
+      }
+      html += `</div>`;
+
+      // Post-Mortem
+      if (inc.postMortem) {
+        const pm = inc.postMortem;
+        html += `
+          <div class="detail-section">
+            <h3>Post-Mortem</h3>
+            <div style="font-size:13px;font-weight:600;margin-bottom:8px">${esc(pm.title)}</div>
+            <div style="margin-bottom:12px">
+              <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Timeline</div>
+              <pre>${esc(pm.timeline)}</pre>
+            </div>
+            <div style="margin-bottom:12px">
+              <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Impact</div>
+              <pre>${esc(pm.impact)}</pre>
+            </div>
+            <div style="margin-bottom:12px">
+              <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Remediation</div>
+              <pre>${esc(pm.remediation)}</pre>
+            </div>
+            <div>
+              <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Lessons Learned</div>
+              <pre>${esc(pm.lessonsLearned)}</pre>
+            </div>
+          </div>
+        `;
+      }
+
+      return html;
     }
 
     // ── Polling for health + graph stats ────────────────────
@@ -447,6 +957,29 @@
         btn.textContent = 'Trigger Scan';
       }, 5000);
     }
+
+    // ── Simulate ─────────────────────────────────────────────
+    function toggleSimMenu() {
+      document.getElementById('simMenu').classList.toggle('open');
+    }
+
+    async function runSimulation(scenario) {
+      document.getElementById('simMenu').classList.remove('open');
+      try {
+        await fetch(`${BASE}/api/simulate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scenario }),
+        });
+      } catch {}
+    }
+
+    // Close sim menu on outside click
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.simulate-dropdown')) {
+        document.getElementById('simMenu').classList.remove('open');
+      }
+    });
 
     // ── Init ────────────────────────────────────────────────
     connectSSE();

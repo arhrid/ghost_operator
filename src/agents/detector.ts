@@ -95,24 +95,66 @@ export class DetectorAgent {
 
   private async searchOutages(): Promise<DetectionSignal[]> {
     const signals: DetectionSignal[] = [];
-    try {
-      const results = await this.tavily.searchOutages();
-      for (const r of results.results) {
-        if (r.score > 0.5) {
-          signals.push({
-            source: 'tavily',
-            title: r.title,
-            summary: r.content.substring(0, 500),
-            url: r.url,
-            timestamp: new Date().toISOString(),
-            raw: r,
-          });
+
+    // Run general outage search + targeted per-service searches in parallel
+    const searches: Promise<void>[] = [];
+
+    // General outage search
+    searches.push(
+      this.tavily.searchOutages().then(results => {
+        for (const r of results.results) {
+          if (r.score > 0.5) {
+            signals.push({
+              source: 'tavily',
+              title: r.title,
+              summary: r.content.substring(0, 500),
+              url: r.url,
+              timestamp: new Date().toISOString(),
+              raw: r,
+            });
+          }
         }
+      }).catch((error: any) => {
+        console.error('[detector] Tavily general search failed:', error.message);
+      })
+    );
+
+    // Targeted searches for active Render services
+    try {
+      const renderServices = await this.render.listServices();
+      for (const svc of renderServices.slice(0, 2)) {
+        searches.push(
+          this.tavily.searchOutages(svc.name).then(results => {
+            for (const r of results.results) {
+              if (r.score > 0.6) {
+                signals.push({
+                  source: 'tavily',
+                  title: r.title,
+                  summary: r.content.substring(0, 500),
+                  url: r.url,
+                  timestamp: new Date().toISOString(),
+                  raw: r,
+                });
+              }
+            }
+          }).catch((error: any) => {
+            console.error(`[detector] Tavily search for ${svc.name} failed:`, error.message);
+          })
+        );
       }
     } catch (error: any) {
-      console.error('[detector] Tavily search failed:', error.message);
+      console.error('[detector] Failed to get Render services for targeted search:', error.message);
     }
-    return signals;
+
+    await Promise.all(searches);
+
+    // Deduplicate by URL
+    const seen = new Set<string>();
+    return signals.filter(s => {
+      if (s.url && seen.has(s.url)) return false;
+      if (s.url) seen.add(s.url);
+      return true;
+    });
   }
 
   private async checkScoutUpdates(): Promise<DetectionSignal[]> {

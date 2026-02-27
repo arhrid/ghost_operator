@@ -1,6 +1,6 @@
 import neo4j, { Driver, Session } from 'neo4j-driver';
 import { config } from '../config';
-import { Incident, RemediationAction, PostMortem, GraphStats } from '../types';
+import { Incident, RemediationAction, PostMortem, GraphStats, PastRemediation } from '../types';
 
 export class Neo4jClient {
   private driver: Driver | null = null;
@@ -143,7 +143,7 @@ export class Neo4jClient {
     }
   }
 
-  async findSimilarIncidents(services: string[], errors: string[]): Promise<Incident[]> {
+  async findSimilarIncidents(services: string[], errors: string[]): Promise<{ incident: Incident; remediations: PastRemediation[] }[]> {
     const session = this.getSession();
     if (!session) return [];
     try {
@@ -164,22 +164,49 @@ export class Neo4jClient {
 
       return result.records.map((r) => {
         const node = r.get('i').properties;
+        const rawRemediations = r.get('remediations') as any[];
+        const remediations: PastRemediation[] = rawRemediations
+          .filter((rem: any) => rem.type)
+          .map((rem: any) => ({
+            type: rem.type,
+            target: rem.target ?? '',
+            success: rem.success ?? false,
+          }));
+
         return {
-          id: node.id,
-          title: node.title,
-          summary: node.summary,
-          severity: node.severity,
-          detectedAt: node.detectedAt,
-          services: r.get('services'),
-          errors: r.get('errors').filter(Boolean),
-          rootCause: r.get('rootCause') ?? undefined,
-          signals: [],
-          remediationActions: [],
+          incident: {
+            id: node.id,
+            title: node.title,
+            summary: node.summary,
+            severity: node.severity,
+            detectedAt: node.detectedAt,
+            services: r.get('services'),
+            errors: r.get('errors').filter(Boolean),
+            rootCause: r.get('rootCause') ?? undefined,
+            signals: [],
+            remediationActions: [],
+          },
+          remediations,
         };
       });
     } catch (error: any) {
       console.error('[neo4j] findSimilarIncidents failed:', error.message);
       return [];
+    } finally {
+      await session.close();
+    }
+  }
+
+  async updateRemediationValidation(remediationId: string, validated: boolean): Promise<void> {
+    const session = this.getSession();
+    if (!session) return;
+    try {
+      await session.run(
+        `MATCH (a:Remediation {id: $id}) SET a.validated = $validated`,
+        { id: remediationId, validated }
+      );
+    } catch (error: any) {
+      console.error('[neo4j] updateRemediationValidation failed:', error.message);
     } finally {
       await session.close();
     }

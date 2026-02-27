@@ -56,4 +56,16 @@ export class TavilyClient {
       : 'major cloud service outage OR incident today';
     return this.search(query);
   }
+
+  /** Search for remediation guidance for a specific error type */
+  async searchRemediation(errorType: string): Promise<string | null> {
+    try {
+      const result = await this.search(`how to fix ${errorType} cloud service remediation`, 3);
+      if (result.answer) return result.answer;
+      if (result.results.length > 0) return result.results[0].content.substring(0, 300);
+      return null;
+    } catch {
+      return null;
+    }
+  }
 }

@@ -1,4 +1,5 @@
 import { v4 as uuid } from 'uuid';
+import { YutoriClient } from '../services/yutori';
 import { DetectionSignal, Incident, Severity } from '../types';
 
 // Well-known cloud/infra services for entity extraction
@@ -30,8 +31,14 @@ const CRITICAL_KEYWORDS = ['outage', 'down', 'critical', 'major', 'complete fail
 const WARNING_KEYWORDS = ['degraded', 'slow', 'intermittent', 'partial', 'elevated error', 'latency'];
 
 export class AnalyzerAgent {
+  private yutori: YutoriClient | null;
+
+  constructor(yutori?: YutoriClient) {
+    this.yutori = yutori ?? null;
+  }
+
   /** Analyze a batch of detection signals into an incident */
-  analyze(signals: DetectionSignal[]): Incident | null {
+  async analyze(signals: DetectionSignal[]): Promise<Incident | null> {
     if (signals.length === 0) return null;
 
     const allText = signals.map(s => `${s.title} ${s.summary}`).join(' ');
@@ -45,6 +52,25 @@ export class AnalyzerAgent {
       ? primarySignal.title
       : `Detected anomaly in ${services.join(', ') || 'unknown service'}`;
 
+    let rootCause = this.inferRootCause(allText, errors);
+    let researchSources: string[] | undefined;
+
+    // For warning/critical signals, use Yutori deep research for root cause
+    if (this.yutori && (severity === 'warning' || severity === 'critical')) {
+      const query = `${services.join(' ')} ${errors.join(' ')} root cause analysis incident`;
+      console.log(`[analyzer] Running Yutori research: "${query.substring(0, 80)}..."`);
+      const research = await this.yutori.research(query);
+
+      if (research.summary) {
+        rootCause = rootCause
+          ? `${rootCause}. Research: ${research.summary}`
+          : research.summary;
+      }
+      if (research.sources.length > 0) {
+        researchSources = research.sources;
+      }
+    }
+
     const incident: Incident = {
       id: uuid(),
       title: title.substring(0, 200),
@@ -53,7 +79,8 @@ export class AnalyzerAgent {
       detectedAt: primarySignal.timestamp,
       services,
       errors,
-      rootCause: this.inferRootCause(allText, errors),
+      rootCause,
+      researchSources,
       signals,
       remediationActions: [],
     };
