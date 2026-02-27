@@ -144,7 +144,26 @@ Dashboard at `http://localhost:3000/dashboard`.
 
 ### Deploy to Render
 
-`render.yaml` is included. Push to GitHub, create a Blueprint on Render, set env vars, done.
+A `render.yaml` Blueprint is included, so Render can pick up the build and start commands automatically.
+
+1. Fork or push this repo to your own GitHub account
+2. Go to [Render Dashboard](https://dashboard.render.com) → **New** → **Blueprint**
+3. Connect your GitHub repo — Render will detect `render.yaml`
+4. In the Render dashboard, set these environment variables for the service:
+
+   | Variable | Where to get it |
+   |----------|-----------------|
+   | `TAVILY_API_KEY` | [tavily.com](https://tavily.com) — free tier available |
+   | `YUTORI_API_KEY` | [yutori.com](https://yutori.com) |
+   | `NEO4J_URI` | [sandbox.neo4j.com](https://sandbox.neo4j.com) — use the Bolt URL |
+   | `NEO4J_USER` | Defaults to `neo4j` on Sandbox |
+   | `NEO4J_PASSWORD` | From your Neo4j Sandbox instance |
+   | `RENDER_API_KEY` | Render dashboard → Account Settings → API Keys |
+   | `SENSO_API_KEY` | [senso.ai](https://senso.ai) |
+   | `SENSO_ORGANIZATION_ID` | From your Senso dashboard |
+
+5. Click **Apply** — Render will run `npm install && npm run build`, then start the server
+6. Your dashboard will be live at `https://<your-service-name>.onrender.com/dashboard`
 
 ## Project Structure
 
