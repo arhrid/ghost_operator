@@ -162,7 +162,7 @@ async function start() {
   console.log('🔮 Ghost Operator starting...');
 
   // Connect Neo4j
-  neo4j.connect();
+  await neo4j.connect();
 
   // Initialize Yutori scouts
   await detector.initScouts();
