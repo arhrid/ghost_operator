@@ -92,10 +92,8 @@ export interface GraphStats {
 
 // ── Yutori scout config ─────────────────────────────────────
 export interface ScoutConfig {
-  name: string;
-  urls: string[];
-  keywords: string[];
-  interval?: number; // minutes
+  query: string;
+  intervalSeconds?: number; // default 1800 (30 min)
 }
 
 export interface ScoutUpdate {
