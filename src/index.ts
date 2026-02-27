@@ -190,6 +190,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Redirect root to dashboard
+app.get('/', (_req: Request, res: Response) => {
+  res.redirect('/dashboard');
+});
+
 // Serve dashboard
 app.use('/dashboard', express.static(path.join(__dirname, 'dashboard')));
 

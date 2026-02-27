@@ -19,25 +19,12 @@ export class DetectorAgent {
   async initScouts(): Promise<void> {
     const scouts = [
       {
-        name: 'cloud-status',
-        urls: [
-          'https://status.aws.amazon.com',
-          'https://status.cloud.google.com',
-          'https://status.azure.com',
-          'https://www.render.com/status',
-        ],
-        keywords: ['outage', 'degraded', 'incident', 'disruption', 'unavailable'],
-        interval: 5,
+        query: 'Monitor cloud infrastructure outages for AWS, Google Cloud, Azure, and Render. Report any service disruptions, degraded performance, or incident reports from their status pages.',
+        intervalSeconds: 1800,
       },
       {
-        name: 'community-alerts',
-        urls: [
-          'https://www.reddit.com/r/devops/new',
-          'https://news.ycombinator.com/newest',
-          'https://www.reddit.com/r/sysadmin/new',
-        ],
-        keywords: ['outage', 'down', 'incident', '503', '500', 'degraded'],
-        interval: 5,
+        query: 'Monitor Reddit r/devops, r/sysadmin, and Hacker News for reports of cloud service outages, downtime, 503/500 errors, or degraded infrastructure performance.',
+        intervalSeconds: 1800,
       },
     ];
 

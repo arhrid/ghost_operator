@@ -25,7 +25,8 @@
       "Bash(npx playwright:*)",
       "WebFetch(domain:yutori.com)",
       "WebFetch(domain:blog.yutori.com)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(sleep 10:*)"
     ]
   }
 }
