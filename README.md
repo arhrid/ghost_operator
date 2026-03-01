@@ -4,7 +4,7 @@ An autonomous infrastructure agent. It detects incidents, figures out what broke
 
 ## In Simple Terms
 
-Your app is running on cloud servers. One of them crashes at 3 AM. Normally, an engineer gets paged, wakes up, SSH's in, pokes around logs, restarts the service, maybe scales it up, then spends 30 minutes writing an incident report.
+Consider your app that's running on cloud servers. A server crashes at 3 AM. Usually, an engineer is pinged, wakes up, SSH's in, pokes around logs, restarts the service, maybe scales it up, then spends 30 minutes writing an incident report.
 
 Ghost Operator replaces that entire workflow. It's constantly scanning — checking your Render services, searching the web for outage reports, monitoring status pages and community forums. When it picks up a signal that something is wrong, it kicks off a pipeline:
 
@@ -13,7 +13,7 @@ Ghost Operator replaces that entire workflow. It's constantly scanning — check
 3. It takes action — restarts the service, scales it up, whatever the situation calls for.
 4. It writes a post-mortem and saves it, so next time it has more context.
 
-The key thing: it gets better over time. Every incident becomes a node in a knowledge graph. Every post-mortem becomes searchable memory. The agent that handles incident #50 is meaningfully smarter than the one that handled incident #1.
+Key Attribute: it gets better over time. Every incident becomes a node in a knowledge graph. Every post-mortem becomes searchable memory. The agent that handles incident #50 is meaningfully smarter than the one that handled incident #1.
 
 ## Architecture
 
