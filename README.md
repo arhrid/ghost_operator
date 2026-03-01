@@ -191,4 +191,4 @@ src/
 
 TypeScript, Node.js, Express, Neo4j Driver, Axios, node-cron.
 
-2026 Built with Claude Code & Antigravity
+Acknowledgements: Built with Claude Code & Antigravity
